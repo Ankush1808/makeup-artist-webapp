@@ -1,233 +1,99 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-type Profile = {
-  artist_name: string | null;
-  business_name: string | null;
-  email: string | null;
-  city: string | null;
-  contact_number: string | null;
-  instagram_url: string | null;
-};
-
 export default function DashboardPage() {
-  const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string>("");
-
-  const [profile, setProfile] = useState<Profile | null>(null);
-
-  const [artistName, setArtistName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [city, setCity] = useState("");
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [saveMessage, setSaveMessage] = useState("");
-
-  useEffect(() => {
-    const getUserAndProfile = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        router.push("/login");
-        return;
-      }
-
-      setUserId(user.id);
-      setUserEmail(user.email || "");
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("artist_name, business_name, email, city, contact_number, instagram_url")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setProfile(data);
-        setArtistName(data.artist_name || "");
-        setBusinessName(data.business_name || "");
-        setContactNumber(data.contact_number || "");
-        setCity(data.city || "");
-        setInstagramUrl(data.instagram_url || "");
-      }
-
-      setLoading(false);
-    };
-
-    getUserAndProfile();
-  }, [router]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!userId) return;
-
-    setSaveMessage("");
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: userId,
-      email: userEmail,
-      artist_name: artistName,
-      business_name: businessName,
-      contact_number: contactNumber,
-      instagram_url: instagramUrl,
-      city,
-    });
-
-    if (error) {
-      setSaveMessage(error.message);
-      return;
-    }
-
-    setProfile({
-      artist_name: artistName,
-      business_name: businessName,
-      email: userEmail,
-      city,
-      contact_number: contactNumber,
-      instagram_url: instagramUrl,
-    });
-
-    setSaveMessage("Profile saved successfully.");
-  };
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-pink-50 flex items-center justify-center">
-        <p className="text-lg text-gray-600">Loading dashboard...</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-pink-50 p-6">
-      <div className="mx-auto max-w-5xl rounded-3xl bg-white p-8 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome{profile?.artist_name ? `, ${profile.artist_name}` : ""}
-            </h1>
-            <p className="mt-2 text-gray-600">
-              This is your first dashboard screen.
-            </p>
-          </div>
+    <main className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-pink-50 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <section className="rounded-[2rem] bg-white shadow-xl border border-pink-100 p-6 md:p-10">
+          <p className="text-sm uppercase tracking-[0.25em] text-pink-500 font-semibold">
+            Bridal Business Assistant
+          </p>
 
-          <div className="flex gap-3">
+          <h1 className="mt-3 text-4xl md:text-5xl font-bold text-pink-950 leading-tight">
+            Welcome back ✨
+          </h1>
+
+          <p className="mt-3 text-gray-600 text-lg max-w-2xl">
+            Create luxury quotations, convert them into confirmed events and
+            track your payments beautifully.
+          </p>
+
+          <Link
+            href="/quotations/new"
+            className="mt-8 inline-flex w-full md:w-auto justify-center rounded-2xl bg-pink-900 px-8 py-4 text-white font-semibold shadow-lg hover:bg-pink-950 transition"
+          >
+            + Create New Quote
+          </Link>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold text-pink-950 mb-4">
+            Quick Actions
+          </h2>
+
+          <div className="grid md:grid-cols-4 gap-4">
             <Link
-              href="/quotations"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700"
+              href="/quotations/new"
+              className="rounded-3xl bg-white p-6 shadow-md border border-pink-100 hover:shadow-xl transition"
             >
-             Quotations
+              <div className="text-3xl mb-4">📄</div>
+              <h3 className="font-bold text-pink-950">New Bridal Quote</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Start a fresh quotation for a bride or event.
+              </p>
             </Link>
 
             <Link
-              href="/quotations/new"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+              href="/quotations"
+              className="rounded-3xl bg-white p-6 shadow-md border border-pink-100 hover:shadow-xl transition"
             >
-              New Quotation
+              <div className="text-3xl mb-4">✨</div>
+              <h3 className="font-bold text-pink-950">Client Quotes</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                View, download and convert quotations.
+              </p>
             </Link>
 
             <Link
               href="/bookings"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+              className="rounded-3xl bg-white p-6 shadow-md border border-pink-100 hover:shadow-xl transition"
             >
-              Bookings
+              <div className="text-3xl mb-4">💍</div>
+              <h3 className="font-bold text-pink-950">Confirmed Events</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Manage bookings, dates and event details.
+              </p>
             </Link>
 
             <Link
-              href="/clients"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+              href="/bookings"
+              className="rounded-3xl bg-white p-6 shadow-md border border-pink-100 hover:shadow-xl transition"
             >
-              Clients
+              <div className="text-3xl mb-4">💰</div>
+              <h3 className="font-bold text-pink-950">Collections</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Track advance, balance and payment status.
+              </p>
             </Link>
-
-            <button
-              onClick={handleLogout}
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
-            >
-              Logout
-            </button>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-8 rounded-2xl border border-pink-100 bg-pink-50 p-6">
-          <h2 className="text-2xl font-semibold text-gray-900">Your Profile</h2>
-          <p className="mt-2 text-gray-600">
-            Complete your business details below.
-          </p>
+        <section className="rounded-3xl bg-pink-900 text-white p-6 md:p-8 shadow-xl">
+          <h2 className="text-2xl font-bold">Your workflow</h2>
 
-          <form onSubmit={handleSaveProfile} className="mt-6 grid gap-4 md:grid-cols-2">
-            <input
-              type="text"
-              placeholder="Artist name"
-              value={artistName}
-              onChange={(e) => setArtistName(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              required
-            />
-
-            <input
-              type="text"
-              placeholder="Business name"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-            />
-
-            <input
-              type="text"
-              placeholder="Contact number"
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-            />
-
-            <input
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-            />
-
-            <input
-              type="text"
-              placeholder="Instagram URL"
-              value={instagramUrl}
-              onChange={(e) => setInstagramUrl(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500 md:col-span-2"
-            />
-
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-xl bg-pink-600 px-5 py-3 font-semibold text-white hover:bg-pink-700"
-              >
-                Save Profile
-              </button>
-            </div>
-          </form>
-
-          {saveMessage && (
-            <p className="mt-4 rounded-xl bg-white p-3 text-sm text-pink-700">
-              {saveMessage}
-            </p>
-          )}
-        </div>
+          <div className="mt-5 grid md:grid-cols-5 gap-3 text-sm">
+            {["Lead", "Quote", "Booking", "Payment", "Fully Paid"].map(
+              (step, index) => (
+                <div key={step} className="rounded-2xl bg-white/10 p-4 text-center">
+                  <p className="text-pink-100">Step {index + 1}</p>
+                  <p className="font-semibold mt-1">{step}</p>
+                </div>
+              )
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );

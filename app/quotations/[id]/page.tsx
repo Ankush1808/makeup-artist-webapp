@@ -11,6 +11,8 @@ type Profile = {
   business_name: string | null;
   contact_number: string | null;
   instagram_url: string | null;
+  phone?: string | null;
+  instagram?: string | null;
   city: string | null;
   email: string | null;
 };
@@ -77,8 +79,26 @@ export default function QuotationDetailPage() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const formatMoney = (value: number | null | undefined) => {
+    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  };
+
+  const formatPdfMoney = (value: number | null | undefined) => {
     return `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
   };
+
+  function getStatusColor(status: string | null | undefined) {
+    const lower = status?.toLowerCase() || "";
+
+    if (lower.includes("converted")) {
+      return "bg-purple-100 text-purple-700";
+    }
+
+    if (lower.includes("sent")) {
+      return "bg-blue-100 text-blue-700";
+    }
+
+    return "bg-gray-100 text-gray-700";
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -94,7 +114,9 @@ export default function QuotationDetailPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("artist_name, business_name, contact_number, instagram_url, city, email")
+        .select(
+          "artist_name, business_name, contact_number, instagram_url, phone, instagram, city, email"
+        )
         .eq("id", user.id)
         .maybeSingle();
 
@@ -165,6 +187,14 @@ export default function QuotationDetailPage() {
     const total = Number(quotation.grand_total || 0);
     const balance = Math.max(total - advance, 0);
 
+    let paymentStatus = "pending";
+
+    if (advance >= total && total > 0) {
+      paymentStatus = "fully_paid";
+    } else if (advance > 0) {
+      paymentStatus = "partial";
+    }
+
     try {
       const { data: bookingData, error: bookingError } = await supabase
         .from("bookings")
@@ -177,6 +207,7 @@ export default function QuotationDetailPage() {
           location: quotation.location,
           package_name: quotation.package_name,
           booking_status: "confirmed",
+          payment_status: paymentStatus,
           advance_amount: advance,
           balance_amount: balance,
           total_amount: total,
@@ -208,7 +239,7 @@ export default function QuotationDetailPage() {
       });
 
       setBooking(bookingData);
-      setMessage("Quotation converted to booking successfully.");
+      setMessage("Quotation converted to booking successfully ✨");
     } catch {
       setMessage("Something went wrong while converting the quotation.");
     } finally {
@@ -231,8 +262,8 @@ export default function QuotationDetailPage() {
 
       const brandName = profile?.business_name || "Makeup Artist Studio";
       const artistName = profile?.artist_name || "";
-      const contact = profile?.contact_number || "";
-      const instagram = profile?.instagram_url || "";
+      const contact = profile?.phone || profile?.contact_number || "";
+      const instagram = profile?.instagram || profile?.instagram_url || "";
       const artistCity = profile?.city || "";
       const email = profile?.email || "";
 
@@ -242,11 +273,9 @@ export default function QuotationDetailPage() {
       const muted = [107, 114, 128] as const;
       const gold = [180, 124, 43] as const;
 
-      // Background
       doc.setFillColor(255, 250, 252);
       doc.rect(0, 0, 210, 297, "F");
 
-      // Top luxury header block
       doc.setFillColor(...softBlush);
       doc.roundedRect(margin, y, pageWidth - margin * 2, 36, 4, 4, "F");
 
@@ -258,17 +287,27 @@ export default function QuotationDetailPage() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(...muted);
-      const profileLine = [artistName, contact, artistCity].filter(Boolean).join(" | ");
+
+      const profileLine = [artistName, contact, artistCity]
+        .filter(Boolean)
+        .join(" | ");
+
       doc.text(profileLine || "Luxury makeup quotation", margin + 6, y + 22);
 
       if (email || instagram) {
-        doc.text([email, instagram].filter(Boolean).join(" | "), margin + 6, y + 29);
+        doc.text(
+          [email, instagram].filter(Boolean).join(" | "),
+          margin + 6,
+          y + 29
+        );
       }
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(15);
       doc.setTextColor(...dark);
-      doc.text("QUOTATION", pageWidth - margin - 6, y + 14, { align: "right" });
+      doc.text("QUOTATION", pageWidth - margin - 6, y + 14, {
+        align: "right",
+      });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -279,7 +318,6 @@ export default function QuotationDetailPage() {
 
       y += 48;
 
-      // Quote + event summary
       doc.setDrawColor(245, 207, 222);
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(margin, y, pageWidth - margin * 2, 42, 4, 4, "FD");
@@ -295,9 +333,14 @@ export default function QuotationDetailPage() {
       doc.text(`Name: ${client?.name || "-"}`, margin + 6, y + 18);
       doc.text(`Phone: ${client?.phone || "-"}`, margin + 6, y + 25);
       doc.text(`City: ${client?.city || "-"}`, margin + 6, y + 32);
-      doc.text(`Instagram: ${client?.instagram_handle || "-"}`, margin + 6, y + 39);
+      doc.text(
+        `Instagram: ${client?.instagram_handle || "-"}`,
+        margin + 6,
+        y + 39
+      );
 
       const rightX = 112;
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(...blush);
@@ -313,7 +356,6 @@ export default function QuotationDetailPage() {
 
       y += 55;
 
-      // Services section
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.setTextColor(...blush);
@@ -323,11 +365,14 @@ export default function QuotationDetailPage() {
 
       doc.setFillColor(...softBlush);
       doc.roundedRect(margin, y, pageWidth - margin * 2, 10, 3, 3, "F");
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.setTextColor(...dark);
       doc.text("Service", margin + 5, y + 7);
-      doc.text("Amount", pageWidth - margin - 5, y + 7, { align: "right" });
+      doc.text("Amount", pageWidth - margin - 5, y + 7, {
+        align: "right",
+      });
 
       y += 14;
 
@@ -351,7 +396,7 @@ export default function QuotationDetailPage() {
           doc.line(margin, y + 2, pageWidth - margin, y + 2);
 
           doc.text(item.service_name || "-", margin + 5, y + 8);
-          doc.text(formatMoney(item.price), pageWidth - margin - 5, y + 8, {
+          doc.text(formatPdfMoney(item.price), pageWidth - margin - 5, y + 8, {
             align: "right",
           });
 
@@ -361,7 +406,6 @@ export default function QuotationDetailPage() {
 
       y += 4;
 
-      // Pricing summary box
       if (y > 220) {
         doc.addPage();
         doc.setFillColor(255, 250, 252);
@@ -382,22 +426,29 @@ export default function QuotationDetailPage() {
       doc.setFontSize(9);
       doc.setTextColor(...dark);
       doc.text("Subtotal", 118, y + 18);
-      doc.text(formatMoney(quotation.subtotal), 188, y + 18, { align: "right" });
+      doc.text(formatPdfMoney(quotation.subtotal), 188, y + 18, {
+        align: "right",
+      });
 
       doc.text("Extra Charges", 118, y + 25);
-      doc.text(formatMoney(quotation.extra_charges), 188, y + 25, { align: "right" });
+      doc.text(formatPdfMoney(quotation.extra_charges), 188, y + 25, {
+        align: "right",
+      });
 
       doc.text("Discount", 118, y + 32);
-      doc.text(formatMoney(quotation.discount), 188, y + 32, { align: "right" });
+      doc.text(formatPdfMoney(quotation.discount), 188, y + 32, {
+        align: "right",
+      });
 
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...gold);
       doc.text("Grand Total", 118, y + 39);
-      doc.text(formatMoney(quotation.grand_total), 188, y + 39, { align: "right" });
+      doc.text(formatPdfMoney(quotation.grand_total), 188, y + 39, {
+        align: "right",
+      });
 
       y += 52;
 
-      // Notes
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.setTextColor(...blush);
@@ -408,11 +459,14 @@ export default function QuotationDetailPage() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(...muted);
-      const notesText = quotation.notes || "Thank you for considering our services. We look forward to making your special day beautiful.";
+
+      const notesText =
+        quotation.notes ||
+        "Thank you for considering our services. We look forward to making your special day beautiful.";
+
       const splitNotes = doc.splitTextToSize(notesText, 175);
       doc.text(splitNotes, margin, y);
 
-      // Footer
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...muted);
@@ -442,163 +496,313 @@ export default function QuotationDetailPage() {
       <main className="min-h-screen bg-pink-50 p-6">
         <div className="mx-auto max-w-4xl rounded-3xl bg-white p-8 shadow-xl">
           <p className="text-pink-700">{message || "Quotation not found."}</p>
-          <div className="mt-4">
-            <Link
-              href="/quotations"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
-            >
-              Back to Quotations
-            </Link>
-          </div>
+
+          <Link
+            href="/quotations"
+            className="mt-4 inline-flex rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+          >
+            Back to Client Quotes
+          </Link>
         </div>
       </main>
     );
   }
 
+  const balancePreview =
+    Number(quotation.grand_total || 0) - Number(advanceAmount || 0);
+
   return (
-    <main className="min-h-screen bg-pink-50 p-6">
-      <div className="mx-auto max-w-5xl rounded-3xl bg-white p-8 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {quotation.quote_number}
-            </h1>
-            <p className="mt-2 text-gray-600">
-              View your saved quotation details.
-            </p>
+    <main className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-pink-50 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <section className="rounded-[2rem] bg-white shadow-xl border border-pink-100 p-6 md:p-10">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-pink-500 font-semibold">
+                Quotation Preview
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <h1 className="text-4xl md:text-5xl font-bold text-pink-950">
+                  {client?.name || "Client Quote"}
+                </h1>
+
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                    quotation.status
+                  )}`}
+                >
+                  {quotation.status || "draft"}
+                </span>
+              </div>
+
+              <p className="mt-3 text-gray-600 text-lg">
+                {quotation.quote_number} · {quotation.event_type || "Event"} ·{" "}
+                {quotation.event_date || "Date not added"}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/quotations"
+                className="rounded-2xl border border-pink-200 px-5 py-3 text-center font-semibold text-pink-700 hover:bg-pink-50 transition"
+              >
+                Back to Quotes
+              </Link>
+
+              <button
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="rounded-2xl bg-pink-900 px-5 py-3 font-semibold text-white shadow-lg hover:bg-pink-950 transition disabled:opacity-60"
+              >
+                {downloadingPdf ? "Downloading..." : "Download PDF"}
+              </button>
+            </div>
           </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/quotations"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
-            >
-              Quotations
-            </Link>
-
-            <Link
-              href="/quotations/new"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
-            >
-              New Quotation
-            </Link>
-
-            <button
-              onClick={handleDownloadPdf}
-              disabled={downloadingPdf}
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50 disabled:opacity-60"
-            >
-              {downloadingPdf ? "Downloading..." : "Download Luxury PDF"}
-            </button>
-          </div>
-        </div>
+        </section>
 
         {message && (
-          <p className="mt-6 rounded-xl bg-pink-50 p-4 text-sm text-pink-700">
+          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-4 text-pink-700">
             {message}
-          </p>
+          </div>
         )}
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-xl font-semibold text-gray-900">Client Details</h2>
-            <div className="mt-4 space-y-2 text-gray-700">
-              <p><strong>Name:</strong> {client?.name || "-"}</p>
-              <p><strong>Phone:</strong> {client?.phone || "-"}</p>
-              <p><strong>City:</strong> {client?.city || "-"}</p>
-              <p><strong>Instagram:</strong> {client?.instagram_handle || "-"}</p>
-              <p><strong>Client Notes:</strong> {client?.notes || "-"}</p>
+        <section className="grid md:grid-cols-3 gap-4">
+          <div className="rounded-3xl bg-white shadow-md border border-pink-100 p-5">
+            <p className="text-gray-500">Quote Total</p>
+            <h2 className="mt-2 text-3xl font-bold text-pink-900">
+              {formatMoney(quotation.grand_total)}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl bg-white shadow-md border border-pink-100 p-5">
+            <p className="text-gray-500">Services</p>
+            <h2 className="mt-2 text-3xl font-bold text-pink-900">
+              {items.length}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl bg-white shadow-md border border-pink-100 p-5">
+            <p className="text-gray-500">Package</p>
+            <h2 className="mt-2 text-xl font-bold text-pink-900">
+              {quotation.package_name || "Not added"}
+            </h2>
+          </div>
+        </section>
+
+        <section className="grid lg:grid-cols-2 gap-6">
+          <div className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6">
+            <h2 className="text-2xl font-bold text-pink-950">
+              Bride Details
+            </h2>
+
+            <div className="mt-5 space-y-3 text-gray-700">
+              <p>
+                <span className="font-semibold">Name:</span>{" "}
+                {client?.name || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Phone:</span>{" "}
+                {client?.phone || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">City:</span>{" "}
+                {client?.city || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Instagram:</span>{" "}
+                {client?.instagram_handle || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Notes:</span>{" "}
+                {client?.notes || "-"}
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-xl font-semibold text-gray-900">Event Details</h2>
-            <div className="mt-4 space-y-2 text-gray-700">
-              <p><strong>Event Type:</strong> {quotation.event_type || "-"}</p>
-              <p><strong>Event Date:</strong> {quotation.event_date || "-"}</p>
-              <p><strong>Location:</strong> {quotation.location || "-"}</p>
-              <p><strong>Package:</strong> {quotation.package_name || "-"}</p>
-              <p><strong>Status:</strong> {quotation.status || "-"}</p>
+          <div className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6">
+            <h2 className="text-2xl font-bold text-pink-950">
+              Event Details
+            </h2>
+
+            <div className="mt-5 space-y-3 text-gray-700">
+              <p>
+                <span className="font-semibold">Event:</span>{" "}
+                {quotation.event_type || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Date:</span>{" "}
+                {quotation.event_date || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Location:</span>{" "}
+                {quotation.location || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Package:</span>{" "}
+                {quotation.package_name || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">Status:</span>{" "}
+                {quotation.status || "-"}
+              </p>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-6 rounded-2xl border border-pink-100 bg-pink-50 p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Services</h2>
+        <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6">
+          <h2 className="text-2xl font-bold text-pink-950">
+            Services Included
+          </h2>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-5 space-y-3">
             {items.length === 0 ? (
               <p className="text-gray-500">No services found.</p>
             ) : (
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-xl bg-white p-4"
+                  className="flex items-center justify-between gap-4 rounded-2xl bg-pink-50/70 border border-pink-100 p-4"
                 >
-                  <p className="text-gray-800">{item.service_name}</p>
-                  <p className="font-semibold text-gray-900">{formatMoney(item.price)}</p>
+                  <p className="font-medium text-gray-800">
+                    {item.service_name}
+                  </p>
+                  <p className="font-bold text-pink-900">
+                    {formatMoney(item.price)}
+                  </p>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
 
-        <div className="mt-6 rounded-2xl border border-pink-100 bg-pink-50 p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Pricing Summary</h2>
+        <section className="rounded-3xl bg-pink-900 text-white shadow-xl p-6">
+          <h2 className="text-2xl font-bold">Pricing Summary</h2>
 
-          <div className="mt-4 space-y-2 text-gray-700">
-            <p><strong>Subtotal:</strong> {formatMoney(quotation.subtotal)}</p>
-            <p><strong>Extra Charges:</strong> {formatMoney(quotation.extra_charges)}</p>
-            <p><strong>Discount:</strong> {formatMoney(quotation.discount)}</p>
-            <p><strong>Grand Total:</strong> {formatMoney(quotation.grand_total)}</p>
-            <p><strong>Notes:</strong> {quotation.notes || "-"}</p>
+          <div className="mt-5 space-y-3">
+            <div className="flex justify-between">
+              <p className="text-pink-100">Subtotal</p>
+              <p className="font-semibold">{formatMoney(quotation.subtotal)}</p>
+            </div>
+
+            <div className="flex justify-between">
+              <p className="text-pink-100">Extra Charges</p>
+              <p className="font-semibold">
+                {formatMoney(quotation.extra_charges)}
+              </p>
+            </div>
+
+            <div className="flex justify-between">
+              <p className="text-pink-100">Discount</p>
+              <p className="font-semibold">
+                {formatMoney(quotation.discount)}
+              </p>
+            </div>
+
+            <div className="border-t border-white/20 pt-4 flex justify-between items-center">
+              <p className="text-pink-100">Grand Total</p>
+              <p className="text-4xl font-bold">
+                {formatMoney(quotation.grand_total)}
+              </p>
+            </div>
           </div>
-        </div>
+
+          {quotation.notes && (
+            <div className="mt-6 rounded-2xl bg-white/10 p-4">
+              <p className="text-pink-100 text-sm">Notes</p>
+              <p className="mt-1">{quotation.notes}</p>
+            </div>
+          )}
+        </section>
 
         {!booking ? (
-          <div className="mt-6 rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-xl font-semibold text-gray-900">Convert to Booking</h2>
+          <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6">
+            <h2 className="text-2xl font-bold text-pink-950">
+              Convert to Confirmed Event
+            </h2>
+
             <p className="mt-2 text-gray-600">
-              Once the client confirms, convert this quotation into a booking.
+              Once the client confirms, convert this quotation into a booking
+              and start tracking payment.
             </p>
 
             <form onSubmit={handleConvertToBooking} className="mt-6 space-y-4">
-              <input
-                type="number"
-                placeholder="Advance amount received"
-                value={advanceAmount}
-                onChange={(e) => setAdvanceAmount(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Advance Amount Received
+                </label>
+
+                <input
+                  type="number"
+                  placeholder="Enter advance amount"
+                  value={advanceAmount}
+                  onChange={(e) => setAdvanceAmount(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              <div className="rounded-2xl bg-pink-50 border border-pink-100 p-4">
+                <p className="text-sm text-gray-500">Balance after advance</p>
+                <p className="text-2xl font-bold text-pink-900">
+                  {formatMoney(Math.max(balancePreview, 0))}
+                </p>
+              </div>
 
               <textarea
                 placeholder="Booking notes"
                 value={bookingNotes}
                 onChange={(e) => setBookingNotes(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
+                className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
                 rows={3}
               />
 
               <button
                 type="submit"
                 disabled={converting}
-                className="rounded-xl bg-pink-600 px-5 py-3 font-semibold text-white hover:bg-pink-700 disabled:opacity-60"
+                className="w-full rounded-2xl bg-pink-900 px-6 py-4 font-semibold text-white shadow-lg hover:bg-pink-950 transition disabled:opacity-60"
               >
                 {converting ? "Converting..." : "Convert to Booking"}
               </button>
             </form>
-          </div>
+          </section>
         ) : (
-          <div className="mt-6 rounded-2xl border border-green-100 bg-green-50 p-6">
-            <h2 className="text-xl font-semibold text-gray-900">Booking Created</h2>
-            <div className="mt-4 space-y-2 text-gray-700">
-              <p><strong>Status:</strong> {booking.booking_status || "-"}</p>
-              <p><strong>Total Amount:</strong> {formatMoney(booking.total_amount)}</p>
-              <p><strong>Advance Received:</strong> {formatMoney(booking.advance_amount)}</p>
-              <p><strong>Balance Due:</strong> {formatMoney(booking.balance_amount)}</p>
-              <p><strong>Notes:</strong> {booking.notes || "-"}</p>
+          <section className="rounded-3xl border border-green-100 bg-green-50 p-6 shadow-md">
+            <h2 className="text-2xl font-bold text-green-800">
+              Booking Created
+            </h2>
+
+            <div className="mt-4 grid md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-green-700">Status</p>
+                <p className="font-bold">{booking.booking_status || "-"}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-green-700">Total</p>
+                <p className="font-bold">{formatMoney(booking.total_amount)}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-green-700">Advance</p>
+                <p className="font-bold">
+                  {formatMoney(booking.advance_amount)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-green-700">Balance</p>
+                <p className="font-bold">
+                  {formatMoney(booking.balance_amount)}
+                </p>
+              </div>
             </div>
-          </div>
+
+            <Link
+              href={`/bookings/${booking.id}`}
+              className="mt-6 inline-flex rounded-2xl bg-green-700 px-5 py-3 font-semibold text-white hover:bg-green-800 transition"
+            >
+              Open Booking
+            </Link>
+          </section>
         )}
       </div>
     </main>

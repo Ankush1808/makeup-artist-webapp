@@ -1,18 +1,62 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [artistName, setArtistName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("artist_name, business_name")
+      .eq("id", user.id)
+      .single();
+
+    setArtistName(data?.artist_name || "");
+    setBusinessName(data?.business_name || "");
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-pink-50 flex items-center justify-center">
+        <p className="text-gray-600">Loading dashboard...</p>
+      </main>
+    );
+  }
+
+  const displayName = artistName || businessName || "Artist";
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-pink-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
         <section className="rounded-[2rem] bg-white shadow-xl border border-pink-100 p-6 md:p-10">
           <p className="text-sm uppercase tracking-[0.25em] text-pink-500 font-semibold">
-            Bridal Business Assistant
+            {businessName || "Bridal Business Assistant"}
           </p>
 
           <h1 className="mt-3 text-4xl md:text-5xl font-bold text-pink-950 leading-tight">
-            Welcome back ✨
+            Welcome back, {displayName} ✨
           </h1>
 
           <p className="mt-3 text-gray-600 text-lg max-w-2xl">
@@ -86,7 +130,10 @@ export default function DashboardPage() {
           <div className="mt-5 grid md:grid-cols-5 gap-3 text-sm">
             {["Lead", "Quote", "Booking", "Payment", "Fully Paid"].map(
               (step, index) => (
-                <div key={step} className="rounded-2xl bg-white/10 p-4 text-center">
+                <div
+                  key={step}
+                  className="rounded-2xl bg-white/10 p-4 text-center"
+                >
                   <p className="text-pink-100">Step {index + 1}</p>
                   <p className="font-semibold mt-1">{step}</p>
                 </div>

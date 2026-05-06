@@ -31,7 +31,9 @@ export default function NewQuotationPage() {
   const [instagramHandle, setInstagramHandle] = useState("");
   const [clientNotes, setClientNotes] = useState("");
 
-  const [existingClient, setExistingClient] = useState<ExistingClient | null>(null);
+  const [existingClient, setExistingClient] = useState<ExistingClient | null>(
+    null
+  );
 
   const [eventType, setEventType] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -82,11 +84,7 @@ export default function NewQuotationPage() {
         .eq("phone", clientPhone.trim())
         .maybeSingle();
 
-      if (data) {
-        setExistingClient(data);
-      } else {
-        setExistingClient(null);
-      }
+      setExistingClient(data || null);
     };
 
     lookupClient();
@@ -238,22 +236,7 @@ export default function NewQuotationPage() {
         }
       }
 
-      setMessage(`Quotation saved successfully. Quote number: ${quoteNumber}`);
-
-      setClientName("");
-      setClientPhone("");
-      setClientCity("");
-      setInstagramHandle("");
-      setClientNotes("");
-      setExistingClient(null);
-      setEventType("");
-      setEventDate("");
-      setLocation("");
-      setPackageName("");
-      setServices([{ service_name: "", price: "" }]);
-      setExtraCharges("");
-      setDiscount("");
-      setNotes("");
+      router.push(`/quotations/${quotationData.id}`);
     } catch {
       setMessage("Something went wrong while saving the quotation.");
     } finally {
@@ -270,149 +253,241 @@ export default function NewQuotationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-pink-50 p-6">
-      <div className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">New Quotation</h1>
-            <p className="mt-2 text-gray-600">
-              Create quotation, save client, and track enquiry in one step.
-            </p>
-          </div>
+    <main className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-pink-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <section className="rounded-[2rem] bg-white shadow-xl border border-pink-100 p-6 md:p-10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-pink-500 font-semibold">
+                Luxury Bridal Quotation
+              </p>
 
-          <div className="flex gap-3">
+              <h1 className="mt-3 text-4xl md:text-5xl font-bold text-pink-950">
+                Create New Quote
+              </h1>
+
+              <p className="mt-3 text-gray-600 text-lg max-w-2xl">
+                Create quotation, save client and manage enquiry beautifully in
+                one guided flow.
+              </p>
+            </div>
+
             <Link
-              href="/dashboard"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+              href="/quotations"
+              className="inline-flex items-center justify-center rounded-2xl border border-pink-200 px-5 py-3 font-semibold text-pink-700 hover:bg-pink-50 transition"
             >
-              Dashboard
-            </Link>
-            <Link
-              href="/clients"
-              className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
-            >
-              Clients
+              View All Quotes
             </Link>
           </div>
-        </div>
+        </section>
 
-        <form onSubmit={handleSaveQuotation} className="mt-8 space-y-8">
-          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Client Details</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <input
-                type="text"
-                placeholder="Client name"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-                required
-              />
+        <form onSubmit={handleSaveQuotation} className="space-y-6">
+          {message && (
+            <div className="rounded-2xl border border-pink-100 bg-pink-50 p-4 text-pink-700">
+              {message}
+            </div>
+          )}
 
-              <input
-                type="text"
-                placeholder="Phone number"
-                value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-                required
-              />
+          <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-pink-700 font-bold">
+                1
+              </div>
 
-              <input
-                type="text"
-                placeholder="City"
-                value={clientCity}
-                onChange={(e) => setClientCity(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              />
+              <div>
+                <h2 className="text-2xl font-bold text-pink-950">
+                  Bride Details
+                </h2>
+                <p className="text-gray-500">
+                  Add bride information and client details
+                </p>
+              </div>
+            </div>
 
-              <input
-                type="text"
-                placeholder="Instagram handle"
-                value={instagramHandle}
-                onChange={(e) => setInstagramHandle(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              />
+            <div className="grid gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Bride Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter bride name"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                  required
+                />
+              </div>
 
-              <textarea
-                placeholder="Client notes"
-                value={clientNotes}
-                onChange={(e) => setClientNotes(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500 md:col-span-2"
-                rows={3}
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter phone number"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  City
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter city"
+                  value={clientCity}
+                  onChange={(e) => setClientCity(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Instagram Handle
+                </label>
+                <input
+                  type="text"
+                  placeholder="@makeupbyruchi"
+                  value={instagramHandle}
+                  onChange={(e) => setInstagramHandle(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
             </div>
 
             {existingClient && (
-              <div className="mt-4 rounded-2xl border border-pink-200 bg-white p-4">
-                <p className="font-semibold text-pink-700">Existing client found</p>
-                <p className="mt-2 text-sm text-gray-700">
-                  Name: {existingClient.name} <br />
-                  Phone: {existingClient.phone || "-"} <br />
-                  City: {existingClient.city || "-"}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleUseExistingClient}
-                  className="mt-3 rounded-xl bg-pink-600 px-4 py-2 text-white"
-                >
-                  Use Existing Client Details
-                </button>
+              <div className="mt-5 rounded-2xl border border-pink-200 bg-pink-50 p-5">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-pink-900">
+                      Existing client found ✨
+                    </p>
+                    <p className="text-sm text-pink-700 mt-1">
+                      Use previously saved client details.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleUseExistingClient}
+                    className="rounded-xl bg-pink-900 px-4 py-2 text-white font-semibold hover:bg-pink-950 transition"
+                  >
+                    Use Existing Client
+                  </button>
+                </div>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Event Details</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <input
-                type="text"
-                placeholder="Event type"
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              />
+          <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-pink-700 font-bold">
+                2
+              </div>
 
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-              />
-
-              <input
-                type="text"
-                placeholder="Location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500 md:col-span-2"
-              />
-
-              <input
-                type="text"
-                placeholder="Package name"
-                value={packageName}
-                onChange={(e) => setPackageName(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500 md:col-span-2"
-              />
+              <div>
+                <h2 className="text-2xl font-bold text-pink-950">
+                  Event Details
+                </h2>
+                <p className="text-gray-500">Add bridal event information</p>
+              </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Services & Pricing</h2>
+            <div className="grid gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Event Type
+                </label>
+                <input
+                  type="text"
+                  placeholder="Bridal, Reception, Haldi..."
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
 
-            <div className="mt-4 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Event Date
+                </label>
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="Event venue or city"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Package Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Luxury Bridal Package"
+                  value={packageName}
+                  onChange={(e) => setPackageName(e.target.value)}
+                  className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-pink-700 font-bold">
+                3
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-pink-950">
+                  Services & Pricing
+                </h2>
+                <p className="text-gray-500">
+                  Add bridal services and pricing details
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
               {services.map((service, index) => (
-                <div key={index} className="grid gap-3 md:grid-cols-[2fr_1fr_auto]">
+                <div
+                  key={index}
+                  className="grid gap-4 md:grid-cols-[1fr_180px_auto] items-center rounded-2xl border border-pink-100 bg-pink-50/50 p-4"
+                >
                   <input
                     type="text"
                     placeholder="Service name"
                     value={service.service_name}
                     onChange={(e) =>
-                      handleServiceChange(index, "service_name", e.target.value)
+                      handleServiceChange(
+                        index,
+                        "service_name",
+                        e.target.value
+                      )
                     }
-                    className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
+                    className="rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
                   />
+
                   <input
                     type="number"
                     placeholder="Price"
@@ -420,12 +495,13 @@ export default function NewQuotationPage() {
                     onChange={(e) =>
                       handleServiceChange(index, "price", e.target.value)
                     }
-                    className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
+                    className="rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
                   />
+
                   <button
                     type="button"
                     onClick={() => removeServiceRow(index)}
-                    className="rounded-xl border border-pink-300 px-4 py-2 text-pink-700"
+                    className="rounded-xl border border-red-200 px-4 py-3 text-red-600 hover:bg-red-50 transition"
                   >
                     Remove
                   </button>
@@ -435,57 +511,89 @@ export default function NewQuotationPage() {
               <button
                 type="button"
                 onClick={addServiceRow}
-                className="rounded-xl border border-pink-300 px-4 py-2 font-semibold text-pink-700 hover:bg-pink-50"
+                className="rounded-2xl border border-pink-200 px-5 py-3 font-semibold text-pink-700 hover:bg-pink-50 transition"
               >
-                Add Service
+                + Add Service
               </button>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  type="number"
-                  placeholder="Extra charges"
-                  value={extraCharges}
-                  onChange={(e) => setExtraCharges(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-                />
+              <div className="grid gap-5 md:grid-cols-2 mt-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Extra Charges
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Extra charges"
+                    value={extraCharges}
+                    onChange={(e) => setExtraCharges(e.target.value)}
+                    className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                  />
+                </div>
 
-                <input
-                  type="number"
-                  placeholder="Discount"
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-                />
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Discount
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Discount"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="w-full rounded-2xl border border-pink-100 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-300"
+                  />
+                </div>
               </div>
 
-              <textarea
-                placeholder="Quotation notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-pink-500"
-                rows={3}
-              />
+              <div className="rounded-3xl bg-pink-900 text-white p-6 mt-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-pink-100">Subtotal</p>
+                  <p className="text-xl font-semibold">
+                    ₹{subtotal.toLocaleString()}
+                  </p>
+                </div>
 
-              <div className="rounded-2xl bg-white p-4">
-                <p><strong>Subtotal:</strong> ₹{subtotal}</p>
-                <p><strong>Grand Total:</strong> ₹{grandTotal}</p>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-pink-100">Grand Total</p>
+                  <p className="text-4xl font-bold">
+                    ₹{grandTotal.toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
+          </section>
+
+          <section className="rounded-3xl bg-white shadow-lg border border-pink-100 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-pink-700 font-bold">
+                4
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-pink-950">
+                  Additional Notes
+                </h2>
+                <p className="text-gray-500">Add optional quotation notes</p>
+              </div>
+            </div>
+
+            <textarea
+              placeholder="Additional notes for client..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={5}
+              className="w-full rounded-2xl border border-pink-100 px-4 py-4 outline-none focus:ring-2 focus:ring-pink-300"
+            />
+          </section>
+
+          <div className="sticky bottom-24 z-20">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-3xl bg-pink-900 px-6 py-5 text-lg font-bold text-white shadow-2xl hover:bg-pink-950 transition disabled:opacity-60"
+            >
+              {saving ? "Saving Quotation..." : "Save Luxury Quotation ✨"}
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-xl bg-pink-600 px-6 py-3 font-semibold text-white hover:bg-pink-700 disabled:opacity-60"
-          >
-            {saving ? "Saving..." : "Save Quotation"}
-          </button>
-
-          {message && (
-            <p className="rounded-xl bg-pink-50 p-4 text-sm text-pink-700">
-              {message}
-            </p>
-          )}
         </form>
       </div>
     </main>

@@ -65,6 +65,7 @@ export default function LoginPage() {
             required
           />
 
+
           <button
             type="submit"
             disabled={loading}
@@ -74,6 +75,9 @@ export default function LoginPage() {
           </button>
         </form>
 
+         <Link href="/forgot-password" className="text-sm text-pink-600">
+            Forgot password?
+         </Link>
         {message && (
           <p className="mt-4 rounded-xl bg-pink-50 p-3 text-sm text-pink-700">
             {message}
